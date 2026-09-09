@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AUTOMAN SCHEDULE UNS - Jadwal Pengemudi dan Kendaraan UNS</title>
+  <title>AUTOMAN SCHEDULE UNS - FleetSync Pro</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -460,8 +460,8 @@
             <i class="fa-solid fa-user-plus"></i>
           </div>
           <div>
-            <h3 class="font-bold text-white text-sm md:text-base">Plot Driver & Pemerataan Beban Jam</h3>
-            <p class="text-[10px] text-slate-400">Rekomendasi otomatis berbasis jam kerja Dalam Kota & Luar Kota</p>
+            <h3 id="plotModalTitle" class="font-bold text-white text-sm md:text-base">Plot Driver & Pemerataan Beban Jam</h3>
+            <p id="plotModalSubtitle" class="text-[10px] text-slate-400">Rekomendasi otomatis berbasis jam kerja Dalam Kota & Luar Kota</p>
           </div>
         </div>
         <button onclick="closePlotModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -490,7 +490,7 @@
         </div>
         <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
           <button type="button" onclick="closePlotModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl">Batal</button>
-          <button type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow-md active:scale-95 transition-all flex items-center gap-1.5">
+          <button id="plotModalSubmitBtn" type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow-md active:scale-95 transition-all flex items-center gap-1.5">
             <i class="fa-solid fa-check"></i> Simpan Penugasan
           </button>
         </div>
@@ -3003,10 +3003,10 @@
 
       const actions = document.getElementById('detailModalActions');
       if (actions) {
-        let leftBtn = `<button onclick="deleteEvent('${evt.id}')" class="px-3 py-1.5 bg-rose-600/80 hover:bg-rose-600 text-white rounded-xl font-semibold flex items-center gap-1.5 text-xs"><i class="fa-solid fa-trash-can"></i> Hapus</button>`;
+        let leftBtn = `<button onclick="deleteEvent('${evt.id}')" class="px-3 py-1.5 bg-rose-600/80 hover:bg-rose-600 text-white rounded-xl font-semibold flex items-center gap-1.5 text-xs transition-all active:scale-95"><i class="fa-solid fa-trash-can"></i> Hapus</button>`;
         let rightBtn = evt.isPlotting
-          ? `<div class="flex gap-2"><button onclick="closeEventDetailModal()" class="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-xl">Tutup</button><button onclick="closeEventDetailModal(); openPlotModal('${evt.id}')" class="px-3.5 py-1.5 bg-amber-500 text-slate-950 font-bold rounded-xl shadow-md">Plot Supir</button></div>`
-          : `<button onclick="closeEventDetailModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl">Tutup</button>`;
+          ? `<div class="flex items-center gap-2"><button onclick="closeEventDetailModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all">Tutup</button><button onclick="closeEventDetailModal(); openPlotModal('${evt.id}')" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow-md flex items-center gap-1.5 active:scale-95 transition-all"><i class="fa-solid fa-user-plus"></i> Plot Supir</button></div>`
+          : `<div class="flex items-center gap-2"><button onclick="closeEventDetailModal(); openPlotModal('${evt.id}', true)" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow-md flex items-center gap-1.5 active:scale-95 transition-all" title="Ganti driver yang bertugas"><i class="fa-solid fa-user-pen"></i> Ganti Driver</button><button onclick="closeEventDetailModal()" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-medium transition-all">Tutup</button></div>`;
 
         actions.innerHTML = `${leftBtn}${rightBtn}`;
       }
@@ -3491,10 +3491,30 @@
       }
     }
 
-    function openPlotModal(eventId) {
+    function openPlotModal(eventId, isReassign = false) {
       document.getElementById('plotEventId').value = eventId;
       const targetEvent = allEvents.find(e => String(e.id) === String(eventId)) || {};
       const targetZone = targetEvent.zone || (targetEvent.estimatedKm > 40 ? 'Luar Kota' : 'Dalam Kota');
+
+      const titleEl = document.getElementById('plotModalTitle');
+      const subEl = document.getElementById('plotModalSubtitle');
+      const submitBtn = document.getElementById('plotModalSubmitBtn');
+
+      if (isReassign) {
+        if (titleEl) titleEl.innerText = "Ganti Driver & Pemerataan Beban Jam";
+        if (subEl) subEl.innerText = `Mengganti driver bertugas saat ini (${targetEvent.driverName || targetEvent.driverInitial || '-'})`;
+        if (submitBtn) {
+          submitBtn.className = "px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all flex items-center gap-1.5";
+          submitBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Perbarui Driver';
+        }
+      } else {
+        if (titleEl) titleEl.innerText = "Plot Driver & Pemerataan Beban Jam";
+        if (subEl) subEl.innerText = "Rekomendasi otomatis berbasis jam kerja Dalam Kota & Luar Kota";
+        if (submitBtn) {
+          submitBtn.className = "px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow-md active:scale-95 transition-all flex items-center gap-1.5";
+          submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan Penugasan';
+        }
+      }
 
       // Tampilkan ringkasan agenda pada modal
       const summaryBox = document.getElementById('plotEventSummaryBox');
@@ -3516,6 +3536,7 @@
             <span><i class="fa-regular fa-clock text-sky-400 mr-1"></i>${dateStr} (${timeFormatted})</span>
             <span class="truncate max-w-[150px]"><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i>${escapeHtml(targetEvent.location || 'Surakarta')}</span>
           </div>
+          ${isReassign ? `<div class="text-[11px] pt-1 text-slate-400 border-t border-slate-800/80">Driver Saat Ini: <strong class="text-amber-300">${escapeHtml(targetEvent.driverName || targetEvent.driverInitial || '-')}</strong></div>` : ''}
         `;
       }
 
@@ -3534,12 +3555,10 @@
         if (!a.isReady && b.isReady) return 1;
 
         if (targetZone === 'Luar Kota') {
-          // Prioritaskan driver yang jam/hari Luar Kotanya paling sedikit
           if (a.luarKotaHours !== b.luarKotaHours) return a.luarKotaHours - b.luarKotaHours;
           if (a.luarKotaDays !== b.luarKotaDays) return a.luarKotaDays - b.luarKotaDays;
           return a.totalHours - b.totalHours;
         } else {
-          // Prioritaskan driver yang jam/hari Dalam Kotanya paling sedikit
           if (a.dalamKotaHours !== b.dalamKotaHours) return a.dalamKotaHours - b.dalamKotaHours;
           if (a.dalamKotaDays !== b.dalamKotaDays) return a.dalamKotaDays - b.dalamKotaDays;
           return a.totalHours - b.totalHours;
@@ -3549,12 +3568,13 @@
       // Render Kartu Rekomendasi (Driver Ready Teratas dengan jam paling sedikit)
       const recContainer = document.getElementById('plotRecommendationsContainer');
       if (recContainer) {
-        const topReady = workloads.filter(w => w.isReady).slice(0, 2);
+        // Jangan rekomendasikan supir yang sama jika sedang mode ganti driver
+        const topReady = workloads.filter(w => w.isReady && (!isReassign || !isDriverMatch(w.driver, targetEvent.driverInitial))).slice(0, 2);
         if (topReady.length === 0) {
           recContainer.innerHTML = `
             <div class="p-3 bg-rose-950/40 border border-rose-800/60 rounded-xl text-[11px] text-rose-300 flex items-center gap-2">
               <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
-              <span>Semua driver sedang bertugas, cuti, atau berstatus OFF pada jam ini.</span>
+              <span>Semua driver alternatif sedang bertugas, cuti, atau berstatus OFF pada jam ini.</span>
             </div>
           `;
         } else {
@@ -3590,13 +3610,14 @@
         }
       }
 
-      // Isi Dropdown Supir (diurutkan berdasarkan jam terendah, dengan status ketersediaan)
+      // Isi Dropdown Supir
       const select = document.getElementById('selectPlotDriver');
       if (select) {
         let optHtml = '<option value="">-- Pilih Supir Bertugas --</option>';
         workloads.forEach(stat => {
           const d = stat.driver;
           const primaryInit = d.initial.split(',')[0].trim();
+          const isCurrent = isDriverMatch(d, targetEvent.driverInitial);
           
           let statusPrefix = "";
           let disabledAttr = "";
@@ -3612,18 +3633,21 @@
             disabledAttr = "disabled";
           }
 
+          const currentTag = isCurrent ? " [DRIVER SAAT INI]" : "";
           const zoneInfo = targetZone === 'Luar Kota'
             ? `Luar: ${stat.luarKotaHours}j (${stat.luarKotaDays}hr) | Dalam: ${stat.dalamKotaHours}j`
             : `Dalam: ${stat.dalamKotaHours}j (${stat.dalamKotaDays}hr) | Luar: ${stat.luarKotaHours}j`;
 
-          optHtml += `<option value="${escapeHtml(primaryInit)}" ${disabledAttr}>${escapeHtml(d.name)} [${escapeHtml(d.initial)}] — (${zoneInfo})${statusPrefix}</option>`;
+          optHtml += `<option value="${escapeHtml(primaryInit)}" ${disabledAttr}>${escapeHtml(d.name)} [${escapeHtml(d.initial)}] — (${zoneInfo})${statusPrefix}${currentTag}</option>`;
         });
         select.innerHTML = optHtml;
 
-        // Otomatis pilih rekomendasi pertama jika tersedia
-        const firstReady = workloads.find(w => w.isReady);
+        // Jika mode reassign, pilih rekomendasi pertama yang bukan driver saat ini
+        const firstReady = workloads.find(w => w.isReady && (!isReassign || !isDriverMatch(w.driver, targetEvent.driverInitial)));
         if (firstReady) {
           select.value = firstReady.driver.initial.split(',')[0].trim();
+        } else if (targetEvent.driverInitial) {
+          select.value = targetEvent.driverInitial;
         }
       }
 
@@ -3647,7 +3671,7 @@
       const safeId = sanitizeFirebaseKey(evtId);
       const baseEvent = allEvents.find(ev => String(ev.id) === String(evtId) || String(ev.id) === String(safeId)) || {};
 
-      // PEMERIKSAAN BENTROK DRIVER SAAT PLOTTING
+      // PEMERIKSAAN BENTROK DRIVER SAAT PLOTTING / GANTI DRIVER
       if (!bypassConflictCheck && baseEvent.start && baseEvent.end) {
         const driverCheck = checkDriverConflict(dInitial, baseEvent.start, baseEvent.end, baseEvent.id);
         if (driverCheck.isConflict) {
@@ -3668,38 +3692,76 @@
       const driver = (MASTER_DATA.drivers || []).find(d => isDriverMatch(d, dInitial));
       const driverName = driver ? driver.name : dInitial;
 
+      // Bersihkan nama penumpang dari inisial supir lama untuk mencegah penumpukan teks
+      const vehicleDetails = resolveVehicleDetails(baseEvent);
+      const vehicleInitial = vehicleDetails.matched ? vehicleDetails.matched.initial : '';
+      const cleanPassenger = cleanDisplayPassenger(baseEvent.rawTitle || baseEvent.passenger, baseEvent.driverInitial, baseEvent.driverName, baseEvent.vehicleName, vehicleInitial);
+      const passengerFinal = cleanPassenger && cleanPassenger !== '-' ? cleanPassenger : (baseEvent.passenger || '-');
+      const newRawTitle = `${dInitial} - ${baseEvent.vehicleName || 'Armada UNS'} - ${passengerFinal}`;
+
       const { id, ...eventPayload } = baseEvent;
 
       try {
         const itemRef = ref(rtdb, `fleet_events/${safeId}`);
-        await set(itemRef, {
+        // Gunakan update in-place pada node yang sama untuk mencegah data ganda
+        await update(itemRef, {
           ...eventPayload,
           driverInitial: dInitial,
           driverName: driverName,
+          rawTitle: newRawTitle,
+          passenger: passengerFinal,
           isPlotting: false,
           updatedAt: new Date().toISOString()
         });
 
+        // Update in-place allEvents lokal
         const localIdx = allEvents.findIndex(ev => String(ev.id) === String(evtId) || String(ev.id) === String(safeId));
         if (localIdx !== -1) {
           allEvents[localIdx].driverInitial = dInitial;
           allEvents[localIdx].driverName = driverName;
+          allEvents[localIdx].rawTitle = newRawTitle;
+          allEvents[localIdx].passenger = passengerFinal;
           allEvents[localIdx].isPlotting = false;
+        }
+
+        // Update in-place rtdbEvents lokal
+        const rtdbIdx = rtdbEvents.findIndex(ev => String(ev.id) === String(safeId));
+        if (rtdbIdx !== -1) {
+          rtdbEvents[rtdbIdx].driverInitial = dInitial;
+          rtdbEvents[rtdbIdx].driverName = driverName;
+          rtdbEvents[rtdbIdx].rawTitle = newRawTitle;
+          rtdbEvents[rtdbIdx].passenger = passengerFinal;
+          rtdbEvents[rtdbIdx].isPlotting = false;
+        }
+
+        // Update in-place googleCalendarEvents lokal agar tidak menduplikasi saat re-render
+        const gcalIdx = googleCalendarEvents.findIndex(ev => String(ev.id) === String(safeId) || String(ev.originalGCalId) === String(baseEvent.originalGCalId));
+        if (gcalIdx !== -1) {
+          googleCalendarEvents[gcalIdx].driverInitial = dInitial;
+          googleCalendarEvents[gcalIdx].driverName = driverName;
+          googleCalendarEvents[gcalIdx].rawTitle = newRawTitle;
+          googleCalendarEvents[gcalIdx].passenger = passengerFinal;
+          googleCalendarEvents[gcalIdx].isPlotting = false;
         }
 
         closePlotModal();
         applyFilters();
-        showToast('info', 'Database Tersimpan', 'Driver tersimpan di Realtime Database. Mengupdate Google Calendar...');
+        showToast('info', 'Database Tersimpan', 'Driver berhasil diperbarui di Realtime Database. Mengupdate Google Calendar...');
 
-        const gcalResult = await syncPlotToGoogleCalendar(baseEvent, dInitial, safeId);
+        const gcalResult = await syncPlotToGoogleCalendar({
+          ...baseEvent,
+          rawTitle: newRawTitle,
+          passenger: passengerFinal
+        }, dInitial, safeId);
+
         if (gcalResult && gcalResult.success) {
-          showToast('success', 'Google Calendar Terupdate!', `Supir ter-plot: "${gcalResult.newTitle || dInitial}"`);
+          showToast('success', 'Google Calendar Terupdate!', `Driver diperbarui: "${gcalResult.newTitle || dInitial}"`);
         } else {
           showToast('info', 'Tersimpan di RTDB', (gcalResult ? gcalResult.message : 'Jadwal tersimpan di sistem lokal.'));
         }
       } catch (err) {
-        console.error("Plotting error:", err);
-        showToast('error', 'Gagal Plotting', err.message);
+        console.error("Plotting/Reassign error:", err);
+        showToast('error', 'Gagal Memperbarui Driver', err.message);
       }
     }
 
